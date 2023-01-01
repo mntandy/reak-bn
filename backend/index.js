@@ -8,15 +8,14 @@ const parseString = require("xml2js").parseString
 const getDroneDistanceFromNest = (drone) => {
   const droneX = Number(drone.positionX)
   const droneY = Number(drone.positionY)
-  const x = Math.pow(droneX-250000,2)
-  const y = Math.pow(droneY-250000,2)
-  return Math.sqrt(x+y)
+  return Math.sqrt(Math.pow(droneX-250000,2)+Math.pow(droneY-250000,2))
 }
 
 const extractInfo = (drone) => ({serial:drone.serialNumber,x:positionX,y:positionY})
 
 const closeEncounters = new Map()
 const timers = new Map()
+
 const getDroneOwner = (serialNumber) => {
   const address = `http://assignments.reaktor.com/birdnest/pilots/${serialNumber}`
   console.log(address)
