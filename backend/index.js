@@ -14,42 +14,90 @@ const getDroneDistanceFromNest = (drone) => {
 }
 
 const extractInfo = (drone) => ({serial:drone.serialNumber,x:positionX,y:positionY})
-const closeEncounters = new Map() //key:serial object: pilot+closestDistance+timerId
-const getDroneOwner = (drone) => {
-  axios
-  .get(`http://assignments.reaktor.com/birdnest/pilots/${drone.serialNumber}`).then(response => {
-    const data = response.data
-    const pilot = {id:data.pilotId,firstname:data.firstName,lastname:data.lastName,phoneNumber:data.phoneNumber,email:data.email}
 
+const closeEncounters = new Map()
+const timers = new Map()
+const getDroneOwner = (serialNumber) => {
+  const address = `http://assignments.reaktor.com/birdnest/pilots/${serialNumber}`
+  console.log(address)
+  axios
+  .get(address).then(response => {
+    const data = response.data
+    const pilot = {id:data.pilotId,firstName:data.firstName,lastName:data.lastName,phoneNumber:data.phoneNumber,email:data.email}
+    closeEncounters.set(serialNumber,{...closeEncounters.get(serialNumber),...pilot})
   })
-  .catch(error => {console.dir(error)})
+  .catch(error => {
+    const pilot = {id:-1,firstName:"unknown",lastName:"owner", phoneNumber:"", email: ""}
+    closeEncounters.set(serialNumber,{...closeEncounters.get(serialNumber),...pilot})
+  })
 }
 
-const getDrones = (result) => result.report.capture[0].drone
+const getDrones = (result) => {
+  const capture = result.report?.capture
+  if(capture!==undefined && 
+    Array.isArray(capture) && 
+    capture.length>0) {
+      return capture[0].drone
+    }
+  return undefined
+}
 
-const getDronesSerialAndDistance = (drones) => drones.map(drone => [drone.serialNumber,getDroneDistanceFromNest(drone)])
+const getDronesSerialAndDistance = (drones) => drones.map(drone => [...drone.serialNumber,getDroneDistanceFromNest(drone)])
 
-const processBatch = (result) => {
-  const drones = getDrones(result)
+const deleteEntry = (serialNumber) => () => {
+  console.log("deleting",serialNumber)
+  closeEncounters.delete(serialNumber)
+  timers.delete(serialNumber)
+}
+
+const setTimer = (serialNumber) => timers.set(serialNumber,setTimeout(deleteEntry(serialNumber),600000))
+
+const addNewCloseEncounter = (serialNumber,distance) => {
+  const pilot = getDroneOwner(serialNumber)
+  closeEncounters.set(serialNumber,
+    {distance:distance})
+  setTimer(serialNumber)
+}
+
+const updateCloseEncounter = (serialNumber,distance) => {
+  console.log("updating",serialNumber)
+  closeEncounters.get(serialNumber).distance = distance
+  clearTimeout(timers.get(serialNumber))
+  setTimer(serialNumber)
+}
+
+const processDrones = (drones) => {
   const serialAndInfo = getDronesSerialAndDistance(drones)
+  console.log(serialAndInfo)
   serialAndInfo.forEach(([serialNumber,distance]) => {
     if(distance<100000) {
-      if(closeEncounters.has(serialNumber)) {
-        if(closeEncounters.get(serialNumber).closestDistance < distance)
-          closeEncounters.get(serialNumber).closestDistance = distance
-      else {
-        //new closeEncounter
-      }
-      }
+      console.log(serialNumber,distance)
+      if(closeEncounters.has(serialNumber) 
+        && closeEncounters.get(serialNumber).distance < distance)
+          updateCloseEncounter(serialNumber,distance)
+      else
+        addNewCloseEncounter(serialNumber,distance)
     }
   })
-
 }
+
+const processBatch = (result) => {
+  console.log(closeEncounters)
+  console.log(Array.from(timers.keys()))
+  const drones = getDrones(result)
+  if(drones===undefined || drones===[])
+    console.log("bad data")
+  if(drones===[])
+    console.log("no drones")
+  else
+    processDrones(drones)
+}
+
+
 const getNextBatch = () => {
   axios.get("http://assignments.reaktor.com/birdnest/drones").then(response => {
     const data = response.data
-    console.log(data)
-    parseString(data, (err,result) => console.dir(getDronesDistance(getDrones(result))))
+    parseString(data, (err,result) => processBatch(result))
   })
 }
 
@@ -81,7 +129,7 @@ const errorHandler = (error, request, response, next) => {
 
 app.use(errorHandler)
 
-const PORT = process.env.PORT
-app.listen(PORT, () => {
-	console.log(`Server running on port ${PORT}`)
-})
+//const PORT = process.env.PORT
+//app.listen(PORT, () => {
+//	console.log(`Server running on port ${PORT}`)
+//})
