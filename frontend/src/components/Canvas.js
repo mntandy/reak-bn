@@ -3,12 +3,12 @@ import AppContext from '../utils/context'
 
 const Canvas = () => {
   const {canvasRef} = useContext(AppContext)
-  
+  const width = Math.min(window.innerWidth-20,500)
   return (
     <div>
-      <div>
+      <div className="centered">
         <canvas 
-        id={"canvas"} ref={canvasRef} className="canvas" width={Math.min(window.innerWidth-20,400)} height="200">
+        id={"canvas"} ref={canvasRef} className="canvas" width={width} height={width}>
         Your browser does not support the HTML canvas tag.
         </canvas>
       </div>
