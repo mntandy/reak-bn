@@ -7,3 +7,5 @@ const Recent = () => {
 
   </div>)
 }
+
+export default Recent
