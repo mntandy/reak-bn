@@ -5,12 +5,10 @@ import Canvas from './components/Canvas'
 import Recent from './components/Recent'
 import Message from './components/Message'
 import AppContext from './utils/context'
-import io from 'socket.io-client'
+import useSocket from './hooks/usesocket'
 import useMap from './hooks/usemap'
 
-const socket = io('http://localhost:3001',{
-  autoConnect: false
-})
+
 
 const getColor = (value) => value<100000 ? 'red' : 'black' 
 
@@ -40,61 +38,29 @@ const drawObservation = (canvasRef,observation) => {
   ctx.arc(observation.x/divisor, observation.y/divisor, 4, 0, Math.PI * 2, true)
   ctx.fill()
 }
+
 const App = () => {
-  const [isConnected, setIsConnected] = useState(socket.connected)
+  const [isConnected, setIsConnected] = useState(false)
   const canvasRef = useRef()
   const [observations, setObservations] = useState([])
   const [message,setMessage] = useState()
   const recent = useMap()
+  const socket = useSocket(recent,setObservations,setIsConnected)
   
   const context = {
     canvasRef,recent
   }
 
   useEffect(() => {
+    isConnected && setMessage("Connected to server.")
+    !isConnected && setMessage("Disconnected from server.")
+  },[isConnected])
+
+  useEffect(() => {
     clearCanvas(canvasRef)
     drawCircle(canvasRef)
     observations.forEach(x => drawObservation(canvasRef,x))
   },[observations])
-
-  useEffect(() => {
-    isConnected && setMessage("Connected to server.")
-    !isConnected && setMessage("Disconnected from server.")
-  },[isConnected])
-  useEffect(() => {
-    socket.connect()
-    socket.on('connect', () => {
-      setIsConnected(true)
-      socket.emit("allrecent")
-    })
-    socket.on('disconnect', () => {
-      setIsConnected(false)
-    })
-
-    socket.on('observations', (ob) => {
-      setObservations(ob)
-    })
-    socket.on('allrecent', (dronesInfo) => {
-      dronesInfo.forEach(({key,value}) => {
-        recent.set(key,{...value})
-      })
-    })
-    socket.on('update recent', (droneInfo) => {
-      recent.update(droneInfo[0],droneInfo[1])
-    })
-    socket.on('delete recent', (serialNumber) => {
-      recent.remove(serialNumber)
-    })
-
-    return () => {
-      socket.off('connect')
-      socket.off('disconnect')
-      socket.off('observations')
-      socket.off('allrecent')
-      socket.off('update recent')
-      socket.off('delete recent')
-    }
-  }, [])
 
 
   return (
