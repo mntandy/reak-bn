@@ -3,19 +3,24 @@ import './App.css';
 
 import Canvas from './components/Canvas'
 import Recent from './components/Recent'
+import Message from './components/Message'
 import AppContext from './utils/context'
 import io from 'socket.io-client'
+import useMap from './hooks/usemap'
 
-const socket = io('http://localhost:3001')
+const socket = io('http://localhost:3001',{
+  autoConnect: false
+})
 
 const getColor = (value) => value<100000 ? 'red' : 'black' 
 
 const drawCircle = (canvasRef) => {
+  const [width,height] = getDimensions(canvasRef)
   const ctx = canvasRef.current.getContext("2d");
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.strokeStyle = 'black'
-  ctx.arc(250, 250, 100, 0, Math.PI * 2, true)
+  ctx.arc(width/2, height/2, width/5, 0, Math.PI * 2, true)
   ctx.stroke()
 }
 
@@ -28,17 +33,22 @@ const clearCanvas = (canvasRef) => {
 
 const drawObservation = (canvasRef,observation) => {
   const ctx = canvasRef.current.getContext("2d");
+  const [width,height] = getDimensions(canvasRef)
+  const divisor = 500000/width
   ctx.beginPath()
   ctx.fillStyle = getColor(observation.distance)
-  ctx.arc(observation.x/1000, observation.y/1000, 4, 0, Math.PI * 2, true)
+  ctx.arc(observation.x/divisor, observation.y/divisor, 4, 0, Math.PI * 2, true)
   ctx.fill()
 }
 const App = () => {
   const [isConnected, setIsConnected] = useState(socket.connected)
   const canvasRef = useRef()
   const [observations, setObservations] = useState([])
+  const [message,setMessage] = useState()
+  const recent = useMap()
+  
   const context = {
-    canvasRef,
+    canvasRef,recent
   }
 
   useEffect(() => {
@@ -48,37 +58,48 @@ const App = () => {
   },[observations])
 
   useEffect(() => {
+    isConnected && setMessage("Connected to server.")
+    !isConnected && setMessage("Disconnected from server.")
+  },[isConnected])
+  useEffect(() => {
+    socket.connect()
     socket.on('connect', () => {
-      setIsConnected(true);
+      setIsConnected(true)
+      socket.emit("allrecent")
     })
     socket.on('disconnect', () => {
-      setIsConnected(false);
+      setIsConnected(false)
     })
+
     socket.on('observations', (ob) => {
-      console.log('observations',ob)
       setObservations(ob)
     })
-    socket.on('allrecent', (recent) => {
-      console.log('allrecent',recent)
+    socket.on('allrecent', (dronesInfo) => {
+      dronesInfo.forEach(({key,value}) => {
+        recent.set(key,{...value})
+      })
     })
-    socket.on('update recent', (recent) => {
-      console.log('update recent',recent)
+    socket.on('update recent', (droneInfo) => {
+      recent.update(droneInfo[0],droneInfo[1])
     })
     socket.on('delete recent', (serialNumber) => {
-      console.log('delete recent',serialNumber)
+      recent.remove(serialNumber)
     })
-    socket.emit("allrecent")
 
     return () => {
       socket.off('connect')
       socket.off('disconnect')
-    };
+      socket.off('observations')
+      socket.off('allrecent')
+      socket.off('update recent')
+      socket.off('delete recent')
+    }
   }, [])
 
 
   return (
     <AppContext.Provider value={context}>
-      <div className="centered"><h2>Recent violations of NFZ</h2></div>
+      <Message message={message}/>
       <Canvas/>
       <Recent/>
     </AppContext.Provider>

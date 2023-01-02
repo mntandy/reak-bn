@@ -33,7 +33,6 @@ io.on('connection', (socket) => {
   console.log(`${socket.id} just connected!`)
 
   socket.on('allrecent', (msg) => {
-    console.log('allrecent requested.')
     io.emit('allrecent',[...closeEncounters].map(([key, value]) => ({ key, value })))
   })
   socket.on('disconnect', () => {
@@ -76,7 +75,6 @@ const getDrones = (result) => {
   return undefined
 }
 
-
 const deleteEntry = (serialNumber) => () => {
   console.log("deleting",serialNumber)
   closeEncounters.delete(serialNumber)
@@ -100,19 +98,20 @@ const updateCloseEncounterDistance = (serialNumber,distance) => {
   updateCloseEncounter(serialNumber,{distance})
 }
 
-const extractInfo = (drone) => ({serialNumber:drone.serialNumber,x:Number(drone.positionX),y:Number(drone.positionY),distance:getDroneDistanceFromNest(drone)})
-//const getDronesSerialAndDistance = (drones) => drones.map(drone => [...drone.serialNumber,])
+const extractInfo = (drone) => ({serialNumber:String(drone.serialNumber),x:Number(drone.positionX),y:Number(drone.positionY),distance:getDroneDistanceFromNest(drone)})
 
 const processDrones = (drones) => {
   const info = drones.map(drone => extractInfo(drone))
   io.emit('observations',info)
 
   info.forEach(({serialNumber,distance}) => {
+    
     if(distance<100000) {
       if(closeEncounters.has(serialNumber) 
-        && closeEncounters.get(serialNumber).distance < distance)
+        && closeEncounters.get(serialNumber).distance > distance) {
           updateCloseEncounterDistance(serialNumber,distance)
-      else
+        }
+      else if(!closeEncounters.has(serialNumber))
         addNewCloseEncounter(serialNumber,distance)
     }
   })

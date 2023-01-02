@@ -9,3 +9,11 @@
   align-items: center;
   justify-content: center;
 }
+
+.padding {
+  padding:10px;
+}
+
+.reducedFont {
+  font-size: 14px;
+}
