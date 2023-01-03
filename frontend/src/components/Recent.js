@@ -1,5 +1,5 @@
-import React,{useContext} from 'react'
-import AppContext from '../utils/context'
+import React from 'react'
+
 
 const Table = ({recent}) => {
   return <div className="centered padding">
@@ -25,8 +25,7 @@ const Table = ({recent}) => {
 </table>
 </div>
 }
-const Recent = () => {
-  const {recent} = useContext(AppContext)
+const Recent = ({recent}) => {
   return (
     <div>
       <div className="centered"><b>Recent violations of NFZ</b></div>

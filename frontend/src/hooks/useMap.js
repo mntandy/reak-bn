@@ -1,4 +1,4 @@
-import { useCallback,useEffect,useState } from 'react';
+import { useCallback,useState } from 'react';
 
 const useMap = (initialState = new Map()) => {
 
@@ -23,10 +23,6 @@ const useMap = (initialState = new Map()) => {
       setMap(new Map())
     },[])
 
-  useEffect(() => {
-    console.log(Array.from(map.keys()).length)
-    }
-  ,[map])
   return {map,set,remove,reset,update}
 }
 
