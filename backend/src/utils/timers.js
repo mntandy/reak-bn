@@ -1,14 +1,14 @@
 function Timers(func,clearoutTime) {
-  const timers = new Map()
-  const clear = (key) => clearTimeout(timers.get(key))
+  const timers = {}
+  const clear = (key) => clearTimeout(timers[key])
 
   const set = (key) => {
-    if(timers.has(key))
+    if(timers[key])
       clear(key)
-    timers.set(key,setTimeout(func(key),clearoutTime))
+    timers[key] = setTimeout(func(key),clearoutTime)
   }
 
-  const remove = (key) => timers.delete(key)
+  const remove = (key) => delete timers[key]
   
   return {set,remove,clear}
 }
