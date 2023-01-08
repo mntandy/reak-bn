@@ -12,7 +12,7 @@ app.use(cors())
 const unknownEndpoint = (request, response) => {
 	response.status(404).send({ error: 'unknown endpoint' })
 }
-  
+
 app.use(unknownEndpoint)
   
 const errorHandler = (error, request, response, next) => {
@@ -22,6 +22,6 @@ const errorHandler = (error, request, response, next) => {
 
 app.use(errorHandler)
 
-module.exports = app.listen(3001, () => {
-  console.log('listening for requests on port 3001')
+module.exports = app.listen(8080, () => {
+  console.log('listening for requests on port 8080')
 })

@@ -2,7 +2,7 @@ import { useEffect,useRef} from 'react';
 import io from 'socket.io-client'
 
 const useSocket = (recent,setObservations,setMessage) => {
-  const {current} = useRef(io('http://localhost:3001',{
+  const {current} = useRef(io('',{
     autoConnect: false
   }))
 

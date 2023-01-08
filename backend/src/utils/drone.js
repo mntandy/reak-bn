@@ -9,7 +9,7 @@ const extractInfo = (drone) => {
   return ({serialNumber:String(drone.serialNumber),
     x:Number(drone.positionX),
     y:Number(drone.positionY),
-    distance:getDroneDistanceFromNest(drone)})
+    distance:getDistanceFromNest(drone)})
 }
 
 module.exports = {extractInfo}

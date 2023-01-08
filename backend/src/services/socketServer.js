@@ -14,7 +14,7 @@ function SocketServer(httpServer) {
     events.forEach(([inkey,outkey,action]) => {
       socket.on(inkey, (msg) => {
         io.emit(outkey,action(msg))
-      }) 
+      })
     })
   
     socket.on('disconnect', () => {
