@@ -11,7 +11,7 @@ const useMap = (initialState = new Map()) => {
   const update = useCallback((key, value) => 
     setMap(prev => new Map(prev).set(key, {...prev.get(key),...value}))
   ,[])
-
+  
   const remove = useCallback(key => setMap(prev => {
       const copy = new Map(prev)
       copy.delete(key)

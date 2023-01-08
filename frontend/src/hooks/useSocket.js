@@ -25,6 +25,7 @@ const useSocket = (recent,setObservations,setMessage) => {
       setObservations(ob)
     })
     current.on('allrecent', (dronesInfo) => {
+      recent.reset()
       dronesInfo.forEach(({key,value}) => {
         recent.set(key,{...value})
       })
